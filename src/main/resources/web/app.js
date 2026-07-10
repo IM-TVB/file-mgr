@@ -79,13 +79,24 @@ function escapeHtml(s) {
 }
 
 function formatDate(ms) {
+  const diffSec = Math.floor((Date.now() - ms) / 1000);
+  if (diffSec < 5) return "just now";
+  if (diffSec < 60) return diffSec + (diffSec === 1 ? " second ago" : " seconds ago");
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return diffMin + (diffMin === 1 ? " minute ago" : " minutes ago");
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return diffHour + (diffHour === 1 ? " hour ago" : " hours ago");
+  const diffDay = Math.floor(diffHour / 24);
+  if (diffDay === 1) return "Yesterday";
+  if (diffDay < 7) return diffDay + " days ago";
   const d = new Date(ms);
   const now = new Date();
-  const sameDay = d.toDateString() === now.toDateString();
-  if (sameDay) {
-    return "Today, " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  }
-  return d.toLocaleDateString([], { month: "short", day: "numeric", year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined }) +
+  return d.toLocaleDateString([], { month: "short", day: "numeric", year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
+}
+
+function formatExactDate(ms) {
+  const d = new Date(ms);
+  return d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }) +
     ", " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
@@ -276,77 +287,22 @@ function renderTable(entries, filter) {
     const modTd = document.createElement("td");
     modTd.className = "dim";
     modTd.textContent = formatDate(entry.modified);
+    modTd.title = formatExactDate(entry.modified);
     tr.appendChild(modTd);
 
     const actionsTd = document.createElement("td");
     actionsTd.className = "row-actions";
 
-    if (!entry.isDir) {
-      const dl = document.createElement("button");
-      dl.innerHTML = `<svg viewBox="0 0 20 20" fill="none"><path d="M10 3v9M10 12l-3.5-3.5M10 12l3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v1a1 1 0 001 1h10a1 1 0 001-1v-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
-      dl.title = "Download";
-      dl.setAttribute("aria-label", "Download " + entry.name);
-      dl.addEventListener("click", (e) => {
-        e.stopPropagation();
-        window.location.href = "/api/download?path=" + encodeURIComponent(fullPath);
-      });
-      actionsTd.appendChild(dl);
-    }
-
-    if (!entry.isDir && extOf(entry.name) === "zip") {
-      const extractBtn = document.createElement("button");
-      extractBtn.innerHTML = `<svg viewBox="0 0 20 20" fill="none"><rect x="3.5" y="8" width="13" height="9" rx="1.2" stroke="currentColor" stroke-width="1.3"/><path d="M10 3v7M10 3l-2.5 2.5M10 3l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-      extractBtn.title = "Extract";
-      extractBtn.setAttribute("aria-label", "Extract " + entry.name);
-      extractBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        api("/api/unzip?path=" + encodeURIComponent(fullPath), { method: "POST" })
-          .then(async r => {
-            const data = await r.json().catch(() => ({}));
-            if (r.ok) {
-              const n = data.extracted;
-              showToast(n === undefined ? "Extracted" : `Extracted ${n} file${n === 1 ? "" : "s"}`);
-              loadDir(currentPath);
-            } else {
-              showToast(data.error || "Extract failed", true);
-            }
-          });
-      });
-      actionsTd.appendChild(extractBtn);
-    }
-
-    const renameBtn = document.createElement("button");
-    renameBtn.innerHTML = `<svg viewBox="0 0 20 20" fill="none"><path d="M13.5 3.5l3 3L7 16H4v-3l9.5-9.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
-    renameBtn.title = "Rename";
-    renameBtn.setAttribute("aria-label", "Rename " + entry.name);
-    renameBtn.addEventListener("click", (e) => {
+    const kebabBtn = document.createElement("button");
+    kebabBtn.className = "kebab-btn";
+    kebabBtn.innerHTML = `<svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4.5" r="1.4" fill="currentColor"/><circle cx="10" cy="10" r="1.4" fill="currentColor"/><circle cx="10" cy="15.5" r="1.4" fill="currentColor"/></svg>`;
+    kebabBtn.title = "Actions";
+    kebabBtn.setAttribute("aria-label", "Actions for " + entry.name);
+    kebabBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      promptDialog("Rename to", entry.name, "Rename").then(newName => {
-        if (!newName || newName === entry.name) return;
-        const newPath = joinPath(currentPath, newName);
-        api("/api/rename?path=" + encodeURIComponent(fullPath) + "&newPath=" + encodeURIComponent(newPath), { method: "POST" })
-          .then(r => r.ok ? (showToast("Renamed"), loadDir(currentPath)) : showToast("Rename failed", true));
-      });
+      openRowMenu(kebabBtn, entry, fullPath);
     });
-    actionsTd.appendChild(renameBtn);
-
-    const delBtn = document.createElement("button");
-    delBtn.className = "danger";
-    delBtn.innerHTML = `<svg viewBox="0 0 20 20" fill="none"><path d="M4.5 5.5h11M8 5.5v-1a1 1 0 011-1h2a1 1 0 011 1v1M8.5 9v5M11.5 9v5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M5.5 5.5l.6 9.5a1 1 0 001 .9h5.8a1 1 0 001-.9l.6-9.5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
-    delBtn.title = "Delete";
-    delBtn.setAttribute("aria-label", "Delete " + entry.name);
-    delBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      confirmDialog(
-        entry.isDir ? "Delete folder?" : "Delete file?",
-        `This will permanently delete <strong>${escapeHtml(entry.name)}</strong>. This cannot be undone.`
-      ).then(ok => {
-        if (!ok) return;
-        api("/api/delete?path=" + encodeURIComponent(fullPath), { method: "POST" })
-          .then(r => r.ok ? (showToast("Deleted"), loadDir(currentPath)) : showToast("Delete failed", true));
-      });
-    });
-    actionsTd.appendChild(delBtn);
+    actionsTd.appendChild(kebabBtn);
 
     tr.appendChild(actionsTd);
     tableBody.appendChild(tr);
@@ -781,10 +737,109 @@ document.querySelectorAll(".modal").forEach(modal => {
 
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
-  if (!editorView.classList.contains("hidden")) closeEditor();
+  if (!rowMenu.classList.contains("hidden")) closeRowMenu();
+  else if (!editorView.classList.contains("hidden")) closeEditor();
   else if (!promptModal.classList.contains("hidden")) resolvePrompt(null);
   else if (!confirmModal.classList.contains("hidden")) resolveConfirm(false);
 });
+
+// ---- Per-row kebab action menu ----
+const rowMenu = document.createElement("div");
+rowMenu.className = "row-menu hidden";
+document.body.appendChild(rowMenu);
+
+function closeRowMenu() {
+  rowMenu.classList.add("hidden");
+}
+
+function rowMenuItem(label, iconSvg, onClick, danger) {
+  const item = document.createElement("button");
+  item.className = "row-menu-item" + (danger ? " danger" : "");
+  item.innerHTML = `<span class="row-menu-icon">${iconSvg}</span><span>${escapeHtml(label)}</span>`;
+  item.addEventListener("click", (e) => {
+    e.stopPropagation();
+    closeRowMenu();
+    onClick();
+  });
+  return item;
+}
+
+function openRowMenu(anchorBtn, entry, fullPath) {
+  if (!rowMenu.classList.contains("hidden") && rowMenu._anchor === anchorBtn) {
+    closeRowMenu();
+    return;
+  }
+  rowMenu._anchor = anchorBtn;
+  rowMenu.innerHTML = "";
+
+  if (!entry.isDir) {
+    rowMenu.appendChild(rowMenuItem("Download",
+      `<svg viewBox="0 0 20 20" fill="none"><path d="M10 3v9M10 12l-3.5-3.5M10 12l3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v1a1 1 0 001 1h10a1 1 0 001-1v-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+      () => { window.location.href = "/api/download?path=" + encodeURIComponent(fullPath); }));
+  }
+
+  if (!entry.isDir && extOf(entry.name) === "zip") {
+    rowMenu.appendChild(rowMenuItem("Extract",
+      `<svg viewBox="0 0 20 20" fill="none"><rect x="3.5" y="8" width="13" height="9" rx="1.2" stroke="currentColor" stroke-width="1.3"/><path d="M10 3v7M10 3l-2.5 2.5M10 3l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      () => {
+        api("/api/unzip?path=" + encodeURIComponent(fullPath), { method: "POST" })
+          .then(async r => {
+            const data = await r.json().catch(() => ({}));
+            if (r.ok) {
+              const n = data.extracted;
+              showToast(n === undefined ? "Extracted" : `Extracted ${n} file${n === 1 ? "" : "s"}`);
+              loadDir(currentPath);
+            } else {
+              showToast(data.error || "Extract failed", true);
+            }
+          });
+      }));
+  }
+
+  rowMenu.appendChild(rowMenuItem("Rename",
+    `<svg viewBox="0 0 20 20" fill="none"><path d="M13.5 3.5l3 3L7 16H4v-3l9.5-9.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
+    () => {
+      promptDialog("Rename to", entry.name, "Rename").then(newName => {
+        if (!newName || newName === entry.name) return;
+        const newPath = joinPath(currentPath, newName);
+        api("/api/rename?path=" + encodeURIComponent(fullPath) + "&newPath=" + encodeURIComponent(newPath), { method: "POST" })
+          .then(r => r.ok ? (showToast("Renamed"), loadDir(currentPath)) : showToast("Rename failed", true));
+      });
+    }));
+
+  rowMenu.appendChild(rowMenuItem("Delete",
+    `<svg viewBox="0 0 20 20" fill="none"><path d="M4.5 5.5h11M8 5.5v-1a1 1 0 011-1h2a1 1 0 011 1v1M8.5 9v5M11.5 9v5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M5.5 5.5l.6 9.5a1 1 0 001 .9h5.8a1 1 0 001-.9l.6-9.5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
+    () => {
+      confirmDialog(
+        entry.isDir ? "Delete folder?" : "Delete file?",
+        `This will permanently delete <strong>${escapeHtml(entry.name)}</strong>. This cannot be undone.`
+      ).then(ok => {
+        if (!ok) return;
+        api("/api/delete?path=" + encodeURIComponent(fullPath), { method: "POST" })
+          .then(r => r.ok ? (showToast("Deleted"), loadDir(currentPath)) : showToast("Delete failed", true));
+      });
+    }, true));
+
+  rowMenu.classList.remove("hidden");
+  const btnRect = anchorBtn.getBoundingClientRect();
+  const menuRect = rowMenu.getBoundingClientRect();
+  let top = btnRect.bottom + window.scrollY + 4;
+  let left = btnRect.right + window.scrollX - menuRect.width;
+  if (left < 8) left = 8;
+  if (top + menuRect.height > window.scrollY + window.innerHeight - 8) {
+    top = btnRect.top + window.scrollY - menuRect.height - 4;
+  }
+  rowMenu.style.top = top + "px";
+  rowMenu.style.left = left + "px";
+}
+
+document.addEventListener("mousedown", (e) => {
+  if (!rowMenu.classList.contains("hidden") && !rowMenu.contains(e.target) && e.target !== rowMenu._anchor
+      && !(rowMenu._anchor && rowMenu._anchor.contains(e.target))) {
+    closeRowMenu();
+  }
+});
+window.addEventListener("scroll", () => closeRowMenu(), true);
 
 // ---- New folder ----
 document.getElementById("newFolderBtn").addEventListener("click", async () => {
@@ -792,6 +847,28 @@ document.getElementById("newFolderBtn").addEventListener("click", async () => {
   if (!name) return;
   const res = await api("/api/mkdir?path=" + encodeURIComponent(joinPath(currentPath, name)), { method: "POST" });
   if (res.ok) { showToast("Folder created"); loadDir(currentPath); } else { showToast("Failed to create folder", true); }
+});
+
+// ---- New file ----
+document.getElementById("newFileBtn").addEventListener("click", async () => {
+  const name = await promptDialog("New file name", "", "Create");
+  if (!name) return;
+  if (currentEntries.some(e => e.name.toLowerCase() === name.toLowerCase())) {
+    showToast("A file or folder named \"" + name + "\" already exists", true);
+    return;
+  }
+  const path = joinPath(currentPath, name);
+  const res = await api("/api/write?path=" + encodeURIComponent(path), { method: "POST", body: "" });
+  if (res.ok) {
+    showToast("File created");
+    if (isTextEditable(name)) {
+      openEditor(path);
+    } else {
+      loadDir(currentPath);
+    }
+  } else {
+    showToast("Failed to create file", true);
+  }
 });
 
 // ---- Upload (input + drag & drop, multiple files, sequential with progress) ----
@@ -982,6 +1059,17 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
     // ignore — we're navigating away regardless
   }
   window.location.reload();
+});
+
+document.getElementById("refreshBtn").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  const keepSelection = new Set(selectedPaths);
+  btn.classList.remove("spinning");
+  void btn.offsetWidth; // restart animation if clicked again quickly
+  btn.classList.add("spinning");
+  await loadDir(currentPath);
+  selectedPaths = keepSelection;
+  applySortAndRender();
 });
 
 loadDir("");

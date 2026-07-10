@@ -242,6 +242,30 @@ button, input { font-family: inherit; }
   gap: 12px;
 }
 
+.subbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color .12s ease, background .12s ease, border-color .12s ease;
+}
+.icon-btn svg { width: 15px; height: 15px; }
+.icon-btn:hover { color: var(--text); background: var(--surface-alt); border-color: var(--border); }
+.icon-btn.spinning svg { animation: spin .6s linear; }
+
 .breadcrumb {
   font-size: 13px;
   color: var(--text-dim);
@@ -299,7 +323,7 @@ th.col-icon { width: 40px; }
 th.col-check { width: 34px; }
 th.col-size { width: 100px; }
 th.col-modified { width: 180px; }
-th.col-actions { width: 118px; }
+th.col-actions { width: 44px; }
 
 th.sortable { cursor: pointer; transition: color .12s ease; }
 th.sortable:hover { color: var(--text-dim); }
@@ -322,11 +346,55 @@ td.col-icon { text-align: center; }
 td.col-check { text-align: center; }
 
 .row-checkbox, #selectAllCheckbox {
-  width: 15px;
-  height: 15px;
-  accent-color: var(--accent-a);
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-alt);
   cursor: pointer;
+  position: relative;
   vertical-align: middle;
+  flex-shrink: 0;
+  transition: background .12s ease, border-color .12s ease;
+}
+.row-checkbox:hover, #selectAllCheckbox:hover {
+  border-color: var(--accent-a);
+}
+.row-checkbox:focus-visible, #selectAllCheckbox:focus-visible {
+  outline: 2px solid var(--accent-a);
+  outline-offset: 1px;
+}
+.row-checkbox:checked, #selectAllCheckbox:checked {
+  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+  border-color: transparent;
+}
+.row-checkbox:checked::after, #selectAllCheckbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 4.5px;
+  top: 1.5px;
+  width: 4px;
+  height: 7px;
+  border: solid #061014;
+  border-width: 0 2px 2px 0;
+  transform: rotate(40deg);
+}
+#selectAllCheckbox:indeterminate {
+  background: var(--surface-hover);
+  border-color: var(--accent-a);
+}
+#selectAllCheckbox:indeterminate::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 6.25px;
+  width: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent-a);
 }
 
 .file-icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -349,52 +417,122 @@ td.col-check { text-align: center; }
 .dim { color: var(--text-dim); font-size: 12.5px; font-variant-numeric: tabular-nums; }
 .mono { font-family: var(--font-mono); }
 
-.row-actions { display: flex; gap: 2px; justify-content: flex-end; opacity: 0; transition: opacity .12s ease; }
-tbody tr:hover .row-actions,
-tbody tr:focus-within .row-actions { opacity: 1; }
-.row-actions button {
+.row-actions { display: flex; justify-content: flex-end; }
+
+.kebab-btn {
   background: transparent;
   border: none;
   color: var(--text-dim);
   cursor: pointer;
-  padding: 5px;
+  padding: 5px 8px;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: background .12s ease, color .12s ease;
 }
-.row-actions button svg { width: 15px; height: 15px; }
-.row-actions button:hover { color: var(--text); background: var(--surface-hover); }
-.row-actions button.danger:hover { color: var(--danger); background: var(--danger-bg); }
+.kebab-btn svg { width: 15px; height: 15px; }
+.kebab-btn:hover { color: var(--text); background: var(--surface-hover); }
 
-/* ---------- Bulk selection bar ---------- */
+.row-menu {
+  position: absolute;
+  z-index: 80;
+  min-width: 160px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.45);
+  animation: popIn .12s ease;
+}
+.row-menu.hidden { display: none; }
 
-.bulk-bar {
+.row-menu-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 10px 16px;
-  background: var(--surface-alt);
-  border: 1px solid var(--accent-a);
-  border-bottom: none;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background .1s ease;
+}
+.row-menu-item:hover { background: var(--surface-alt); }
+.row-menu-item.danger { color: var(--danger); }
+.row-menu-item.danger:hover { background: var(--danger-bg); }
+.row-menu-icon { display: inline-flex; width: 15px; height: 15px; flex-shrink: 0; }
+.row-menu-icon svg { width: 100%; height: 100%; }
+
+/* ---------- Bulk selection bar (floating, Pterodactyl-style) ---------- */
+
+.bulk-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 10px 8px 16px;
+  background: #1c1f29;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 16px 40px rgba(0,0,0,.5);
+  animation: bulkBarIn .16s ease;
 }
 .bulk-bar.hidden { display: none; }
-.bulk-bar + table { border-top-left-radius: 0; border-top-right-radius: 0; }
+
+@keyframes bulkBarIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
 
 .bulk-count {
   font-size: 13px;
   font-weight: 600;
-  color: var(--accent-a);
+  color: var(--text-dim);
   white-space: nowrap;
 }
 
-.bulk-actions { display: flex; gap: 8px; }
-.bulk-actions .btn { padding: 6px 12px; font-size: 12.5px; }
-.bulk-actions .btn:disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
+.bulk-actions { display: flex; align-items: center; gap: 6px; }
+
+.bulk-actions .btn {
+  padding: 8px 16px;
+  font-size: 12.5px;
+  border-radius: 999px;
+}
+.bulk-actions .btn:disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
+
+/* Compress/Download/Rename read as primary pill actions, like Pterodactyl's Move/Archive */
+.bulk-actions .btn-ghost {
+  background: var(--accent-a);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+}
+.bulk-actions .btn-ghost:hover { filter: brightness(1.1); border: none; background: var(--accent-a); }
+.bulk-actions .btn-ghost span { display: inline; }
+.bulk-actions .btn-ghost svg { display: none; }
+
+/* Delete stays a plain text action, no pill chrome — matches the reference,
+   with a red hover as a safety affordance since it's destructive. */
+.bulk-actions .btn-danger-solid {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-weight: 600;
+  padding: 8px 12px;
+}
+.bulk-actions .btn-danger-solid:hover { color: var(--danger); filter: none; }
+.bulk-actions .btn-danger-solid svg { display: none; }
 
 .bulk-clear {
-  margin-left: auto;
   background: none;
   border: none;
   color: var(--text-faint);
@@ -402,7 +540,7 @@ tbody tr:focus-within .row-actions { opacity: 1; }
   line-height: 1;
   cursor: pointer;
   padding: 4px 6px;
-  border-radius: 6px;
+  border-radius: 999px;
 }
 .bulk-clear:hover { color: var(--text); background: var(--surface-hover); }
 

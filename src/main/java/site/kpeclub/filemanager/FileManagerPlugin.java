@@ -61,11 +61,11 @@ public class FileManagerPlugin extends JavaPlugin implements CommandExecutor {
      */
     private boolean startServices(CommandSender feedbackTo) {
         port = getConfig().getInt("port", 8080);
-        String bindAddress = getConfig().getString("bind-address", "127.0.0.1");
+        String bindAddress = getConfig().getString("bind-address", "0.0.0.0");
         String rootDirConfig = getConfig().getString("root-directory", "");
         long tokenExpiryMinutes = getConfig().getLong("token-expiry-minutes", 5);
         long sessionExpiryHours = getConfig().getLong("session-expiry-hours", 12);
-        long maxEditFileSizeKb = getConfig().getLong("max-edit-file-size-kb", 2048);
+        long maxEditFileSizeKb = getConfig().getLong("max-edit-file-size-kb", 20480000);
         long maxUploadSizeMb = getConfig().getLong("max-upload-size-mb", 512);
         int consoleMaxLines = getConfig().getInt("console.max-lines", 400);
         String loginPassword = getConfig().getString("login-password", "");

@@ -1,5 +1,5 @@
 name: KPEFileManager
-version: 1.0.0
+version: 1.0.1
 main: site.kpeclub.filemanager.FileManagerPlugin
 api-version: '1.21'
 author: IM_TVB

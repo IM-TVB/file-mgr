@@ -7,10 +7,11 @@
 # plugin on this Paper build.
 
 # Port the built-in web server listens on.
-port: 25565
+port: 8080
 
-# Address to bind to. Use 127.0.0.1 if you're reverse-proxying through Nginx
-# (recommended). Use 0.0.0.0 to allow direct external connections.
+# Address to bind to. Default is 0.0.0.0 (direct external connections allowed —
+# make sure this port is firewalled/secured, since it's reachable from outside).
+# Use 127.0.0.1 instead if you're reverse-proxying through Nginx.
 bind-address: "0.0.0.0"
 
 # Root directory the file manager can browse, relative to the server's
@@ -21,7 +22,7 @@ root-directory: ""
 # Public URL shown to the player when they run /filemgr, e.g.
 # "https://fm.kpeclub.site" if you're proxying with Nginx + SSL.
 # Leave empty to fall back to http://<this-server's-IP>:<port>
-public-url: "example.com:25565"
+public-url: ""
 
 # Minutes a one-time login token stays valid before it must be regenerated.
 token-expiry-minutes: 5
@@ -31,7 +32,7 @@ token-expiry-minutes: 5
 # before). When set, clicking the link shows a password prompt instead of
 # logging straight in — the link and the password are both required, so a
 # leaked/screenshotted link alone isn't enough to get in.
-login-password: "mrvarh"
+login-password: ""
 
 # Hours a browser session stays logged in after redeeming a token.
 session-expiry-hours: 12
