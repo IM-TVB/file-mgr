@@ -1,4 +1,4 @@
-# KPE File Manager
+# KPE File Manager | NO USER NO UPDATE
 
 A PaperMC plugin that gives you a full web-based server admin panel —
 file manager, live console, and command history — gated behind an in-game
