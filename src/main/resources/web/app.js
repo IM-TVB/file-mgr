@@ -21,6 +21,7 @@ const selectAllCheckbox = document.getElementById("selectAllCheckbox");
 const bulkBar = document.getElementById("bulkBar");
 const bulkCount = document.getElementById("bulkCount");
 const bulkCompressBtn = document.getElementById("bulkCompressBtn");
+const bulkExtractBtn = document.getElementById("bulkExtractBtn");
 const bulkDownloadBtn = document.getElementById("bulkDownloadBtn");
 const bulkRenameBtn = document.getElementById("bulkRenameBtn");
 const bulkDeleteBtn = document.getElementById("bulkDeleteBtn");
@@ -348,7 +349,9 @@ function updateBulkBar() {
 
   const selectedEntries = currentEntries.filter(e => selectedPaths.has(joinPath(currentPath, e.name)));
   const singleFile = count === 1 && selectedEntries.length === 1 && !selectedEntries[0].isDir;
+  const singleZip = singleFile && extOf(selectedEntries[0].name) === "zip";
   bulkCompressBtn.disabled = count === 0;
+  bulkExtractBtn.disabled = !singleZip;
   bulkDownloadBtn.disabled = !singleFile;
   bulkRenameBtn.disabled = count !== 1;
   bulkDeleteBtn.disabled = count === 0;
@@ -394,6 +397,23 @@ bulkCompressBtn.addEventListener("click", () => {
         }
       });
   });
+});
+
+bulkExtractBtn.addEventListener("click", () => {
+  if (bulkExtractBtn.disabled || selectedPaths.size !== 1) return;
+  const [path] = selectedPaths;
+  api("/api/unzip?path=" + encodeURIComponent(path), { method: "POST" })
+    .then(async r => {
+      const data = await r.json().catch(() => ({}));
+      if (r.ok) {
+        const n = data.extracted;
+        showToast(n === undefined ? "Extracted" : `Extracted ${n} file${n === 1 ? "" : "s"}`);
+        selectedPaths.clear();
+        loadDir(currentPath);
+      } else {
+        showToast(data.error || "Extract failed", true);
+      }
+    });
 });
 
 bulkDownloadBtn.addEventListener("click", () => {
