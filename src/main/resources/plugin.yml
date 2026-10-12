@@ -1,0 +1,21 @@
+name: KPEFileManager
+version: 1.0.4
+main: site.kpeclub.filemanager.FileManagerPlugin
+api-version: '1.21'
+author: IM_TVB
+description: Web-based file manager for the server, OP-only access via in-game token.
+
+commands:
+  filemgr:
+    description: Generate a one-time login link to the web file manager, or 'reload' its config live
+    aliases: [fm]
+    permission: kpe.filemanager.access
+    permission-message: You do not have permission to use the file manager.
+
+permissions:
+  kpe.filemanager.access:
+    description: Allows generating a file manager login link
+    default: op
+  kpe.filemanager.reload:
+    description: Allows reloading the file manager's config.yml without a server restart
+    default: op

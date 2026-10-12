@@ -1,0 +1,131 @@
+# KPEFileManager configuration
+#
+# After changing anything in this file, run '/filemgr reload' in-game (or
+# from console) to apply it — no server restart needed. This only reloads
+# config values; it does NOT reload the plugin's code, so it's unrelated to
+# (and unaffected by) PlugManX's reload/restart, which doesn't work for this
+# plugin on this Paper build.
+
+# Port the built-in web server listens on.
+port: 8080
+
+# If the port above is already in use, scan nearby ports for a free one instead of
+# failing. The port actually used is shown in the console and in the /filemgr
+# link. Set to false to always use the exact port above.
+auto-port: true
+
+# How many nearby ports to try when the one above is busy. Ports are tried nearest
+# first, both above and below: 60100 -> 60101, 60099, 60102, 60098, ...
+port-scan-limit: 10
+
+# Optional. Only these ports are ever used, nearest to 'port' first. On a panel,
+# list the ports your container was allocated, or the plugin may pick one that
+# nobody can reach. Leave empty to scan freely around 'port'.
+allowed-ports: []
+
+# Optional second port for the file manager, so either one works. Use a second port
+# your host allocated to this server (TCP). Both ports share the same login. The
+# port is opened exactly as set (it is not scanned). 0 = off.
+extra-port: 0
+
+# /filemgr shows the link on the main port only. Set to true to also show a link
+# for extra-port.
+show-extra-port-link: false
+
+# Cloudflare Tunnel: remote access with no open port. Install cloudflared on the server,
+# or set the full path in cloudflare-tunnel-command.
+#  - Token empty: a free random address like https://abc-xyz.trycloudflare.com is created
+#    automatically and shown in the console and /filemgr. It changes on every restart.
+#  - Token set: your own domain. Create a tunnel in the Cloudflare dashboard (Zero Trust >
+#    Networks > Tunnels), copy its token here, and add a public hostname (for example
+#    files.example.com) whose service is http://localhost:<port>. Set public-url to that domain.
+# If public-url is set, it is used instead of the generated address.
+cloudflare-tunnel-enabled: true
+cloudflare-tunnel-token: ""
+cloudflare-tunnel-command: cloudflared
+cloudflare-tunnel-auto-download: true
+public-url: ""
+
+# Address to bind to. Default is 0.0.0.0 (direct external connections allowed —
+# make sure this port is firewalled/secured, since it's reachable from outside).
+# Use 127.0.0.1 instead if you're reverse-proxying through Nginx.
+bind-address: "0.0.0.0"
+
+# Root directory the file manager can browse, relative to the server's
+# working directory. Leave empty ("") to expose the entire server root
+# (plugins, worlds, server.jar, everything).
+root-directory: ""
+
+# Public URL shown to the player when they run /filemgr, e.g.
+# "https://fm.kpeclub.site" if you're proxying with Nginx + SSL.
+# Leave empty to use this server's public IP address (looked up automatically):
+# http://<public-IP>:<port>
+public-url: ""
+
+# Only used when public-url is empty. Looks up this server's public IPv4 address
+# from an external service (api4.ipify.org, etc.) so the link works from outside
+# a container or LAN. Set to false to fall back to the local network address.
+use-public-ip: true
+
+# Check GitHub for a newer release of this plugin shortly after startup and once
+# a day. The result is logged to the console and shown to online operators when
+# they join. Only the release tag and page are read. Set to false to turn this off.
+update-check: true
+
+# Minutes a one-time login token stays valid before it must be regenerated.
+token-expiry-minutes: 5
+
+# Optional extra password required after clicking the /filemgr link, before
+# access is granted. Leave blank to disable (the link alone is enough, as
+# before). When set, clicking the link shows a password prompt instead of
+# logging straight in — the link and the password are both required, so a
+# leaked/screenshotted link alone isn't enough to get in.
+login-password: ""
+
+# Hours a browser session stays logged in after redeeming a token.
+session-expiry-hours: 12
+
+# Max file size (KB) that can be opened in the in-browser text editor.
+# Larger files can still be downloaded/uploaded/deleted, just not edited inline.
+max-edit-file-size-kb: 20480000
+
+# Max size (MB) for a single uploaded file. Requests larger than this are
+# rejected before they're written, so an oversized upload can't fill disk
+# or exhaust server memory.
+max-upload-size-mb: 512
+
+# ---- Console ----
+console:
+  # Max lines kept in the live console view and saved to console.txt
+  # (in this plugin's data folder). Older lines roll off.
+  max-lines: 2000
+
+# Every command a player runs in-game is logged to a per-day file in this
+# plugin's data folder: cmd-history-yyyy-MM-dd.txt
+
+# ---- HTTPS (optional) ----
+# Serves the web UI directly over HTTPS from the plugin itself — no Nginx
+# reverse proxy needed. Requires a Java keystore (.jks or .p12) containing
+# your certificate + private key.
+#
+# Quick self-signed keystore, fine for testing or LAN-only use (browsers
+# will show an untrusted-certificate warning):
+#   keytool -genkeypair -alias kpefm -keyalg RSA -keysize 2048 -validity 365 \
+#     -keystore keystore.jks -storepass changeit -dname "CN=fm.kpeclub.site"
+#
+# To use a real cert (e.g. an existing Let's Encrypt fullchain.pem +
+# privkey.pem), convert it to a PKCS12 keystore first:
+#   openssl pkcs12 -export -in fullchain.pem -inkey privkey.pem \
+#     -out keystore.p12 -name kpefm -passout pass:changeit
+#
+# Drop the resulting file in this plugin's data folder (plugins/KPEFileManager/)
+# — or set an absolute path below — and fill in the password used above.
+# If bind-address above is 0.0.0.0 and this is enabled, make sure the port
+# is actually reachable from outside (firewall / security group).
+https:
+  enabled: false
+  keystore-path: "keystore.jks"
+  keystore-password: ""
+  # Leave empty to reuse keystore-password (the common case for both
+  # keytool -genkeypair and openssl pkcs12 -export above).
+  key-password: ""
